@@ -64,13 +64,29 @@ class UcloudGateway extends Gateway
             'TemplateId' => $message->getTemplate($this),
             'PublicKey' => $config->get('public_key'),
         ];
-        $code = isset($data['code']) ? $data['code'] : '';
-        if (is_array($code) && !empty($code)) {
-            foreach ($code as $key => $value) {
-                $params['TemplateParams.'.$key] = $value;
+        $code = null;
+        if (array_key_exists('code', $data)) {
+            $code = $data['code'];
+        }
+
+        // 定义什么算有效值：排除 null、空字符串、false，保留 0、'0'、true 等
+        $isValidValue = function ($value) {
+            return $value !== null && $value !== '' && $value !== false;
+        };
+
+        if (is_array($code)) {
+            // 过滤数组中的无效值
+            $code = array_filter($code, $isValidValue);
+
+            if (!empty($code)) {
+                $i = 0;
+                foreach ($code as $value) {
+                    $params['TemplateParams.' . $i] = $value;
+                    $i++;
+                }
             }
         } else {
-            if (!empty($code) || !is_null($code)) {
+            if ($isValidValue($code)) {
                 $params['TemplateParams.0'] = $code;
             }
         }
